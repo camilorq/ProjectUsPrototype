@@ -9,4 +9,4 @@ This project is licensed under the MIT License.
 
 # Usage
 Simply open the HTML file in your browser to see it in action.
-You will need to get the face-api script and models from [face-api.js]https://github.com/justadudewhohacks/face-api.js 
+You will need to get the face-api script and models from [face-api.js](https://github.com/justadudewhohacks/face-api.js)
