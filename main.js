@@ -107,10 +107,15 @@ window.onload = async function () {
 
     const seconds = Math.floor((new Date().getTime() - startTime) / 1000);
 
-    if (event.results[current].isFinal) {
+    const confidence_threshold = 0.5; // confidence threshold for speech recognition set to 50% for our use case
+
+    if (
+      event.results[current].isFinal &&
+      event.results[current][0].confidence > confidence_threshold
+    ) {
       const transcript = event.results[current][0].transcript;
       console.log(`RECOGNITION RESULT: "${transcript}" at ${seconds} seconds`);
-      document.getElementById("transcript").innerText = transcript;
+      process_speech_recognition(transcript);
     }
   };
 
@@ -120,6 +125,23 @@ window.onload = async function () {
 
   recognition.start();
 };
+
+function process_speech_recognition(transcript) {
+  //add a period if there is no punctuation
+  const punctuation = ".!?;";
+
+  if (!punctuation.includes(transcript[transcript.length - 1])) {
+    transcript = transcript + ".";
+  }
+
+  //strip the text
+  transcript = transcript.trim();
+
+  //capitalize the first letter
+  transcript = transcript.charAt(0).toUpperCase() + transcript.slice(1);
+
+  document.getElementById("transcript").innerText = transcript;
+}
 
 function compute_emotion_by_window(emotions) {
   val_values = get_pos_neg_confidence(emotions);
@@ -135,20 +157,21 @@ function compute_emotion_by_window(emotions) {
 }
 
 function get_pos_neg_confidence(all_values) {
-  valence_values = { pos: 0, neg: 0, neutral: 0 };
+  const weights = { pos: 0.97, neg: 1.1, neutral: 0.8 }; // weights for each emotion category, fine tuned for our use case
+  const categories = {
+    pos: ["happy", "surprised"],
+    neg: ["angry", "disgusted", "fearful", "sad"],
+    neutral: ["neutral"],
+  };
+
+  let valence_values = { pos: 0, neg: 0, neutral: 0 };
 
   for (key in all_values) {
-    if (
-      key == "angry" ||
-      key == "disgusted" ||
-      key == "fearful" ||
-      key == "sad"
-    ) {
-      valence_values["neg"] += all_values[key];
-    } else if (key == "happy" || key == "surprised") {
-      valence_values["pos"] += all_values[key];
-    } else if (key == "neutral") {
-      valence_values["neutral"] += all_values[key];
+    for (cat in categories) {
+      if (categories[cat].includes(key)) {
+        valence_values[cat] += all_values[key] * weights[cat];
+        break;
+      }
     }
   }
 
